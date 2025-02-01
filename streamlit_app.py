@@ -20,7 +20,6 @@ from scipy.stats import ttest_ind
 from itertools import combinations
 
 # %%
-
 # Function to fetch and process data from URL
 def fetch_and_process_data(url):
     response = requests.get(url)
@@ -136,6 +135,17 @@ def datetime_to_numeric(df, datetime_cols):
         # Convert to seconds since epoch
         df[col] = (df[col] - pd.Timestamp("1970-01-01")) // pd.Timedelta('1s')
     return df
+
+def datetime_to_numeric(df, datetime_cols):
+    for col in datetime_cols:
+        df[col] = pd.to_datetime(df[col], errors='coerce')
+        if df[col].dt.tz is not None:
+            df[col] = df[col].dt.tz_convert('UTC')
+        else:
+            df[col] = df[col].dt.tz_localize('UTC')
+        df[col] = (df[col] - pd.Timestamp("1970-01-01", tz='UTC')) // pd.Timedelta('1s')
+    return df
+
 
 
 def convert_datetime_back(group_stats, datetime_cols):
@@ -296,8 +306,16 @@ selected_standard_group = st.selectbox("Test Group:", options=available_standard
 selected_clean_tracker = clean_tracker[clean_tracker['standard_group'] == selected_standard_group]
 selected_uuid_tracker = process_event_data(selected_clean_tracker)
 
+# %%
 draw_streamlit_bar(selected_uuid_tracker)
 draw_popup_bar_charts(selected_clean_tracker)
 group_stats, pairwise_results = gen_output_tables(
     selected_uuid_tracker, 
     datetime_cols = ['first_session_start_time', 'average_session_start_time', 'last_session_start_time'])
+# %%
+print(pd.__version__)
+print(np.__version__)
+
+
+
+# %%
